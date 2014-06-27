@@ -19,7 +19,7 @@ import paramiko, base64
 
 class talker:
 
-   def __init__(self, host, port=22, user='', passwrd=''):
+   def __init__(self, host, port=22, user='anonymouw', passwrd='none'):
       """
       """
       self.dict_cmd = {}
@@ -199,8 +199,9 @@ def opt_parse():
       return options and arguments
    """
    parser = optparse.OptionParser(usage = usage())
-   parser.add_option('-u', action='store',dest='username', default='', help='username on remote host')
-   parser.add_option('-p', action='store',dest='passwrd', default='', help='remote host password')
+   parser.add_option('--user', action='store',dest='username', default=None, help='username on remote host')
+   parser.add_option('--password', action='store',dest='passwrd', default=None, help='remote host password')
+   parser.add_option('--port', action='store',dest='port', default=22, help='remote port')
    # parser.add_option('-d', action='store',dest='dirt', default='.', help='head of directory tree')
    # parser.add_option('-x', action='store',dest='exclude', default=None, help='directorys to exclude')
    # parser.add_option('-A', action='store_true',dest='almost', default=False, help='Almost all files and directories')
@@ -301,8 +302,6 @@ if __name__ == "__main__":
    """
    """
    (option,arg) = opt_parse()
-   print arg[0]
-   t = talker('wambach', passwrd='celogic')
 
    #client = t.mk_myclient()
    '''
@@ -343,10 +342,21 @@ if __name__ == "__main__":
          sys.exit(1) 
          
    #print cmd
-   # get host name (if not in arg list) and password
+   # get host name (if not in arg list) and user/password
    if not hostname:
       hostname = input('remote host: ')
 
+   if not option.username:
+      username = getpass.getuser()
+   else:
+      username = option.username
+
+   if not option.passwrd: 
+      passwrd = getpass.getpass()
+   else:
+      passwrd = option.passwrd
+
+   t = talker(host, option.port, user=username, passwrd=passwrd)
    #(si,so,se) = t.exec_cmd(cmd)
    st_stuff = exec_cmd(t,cmd)
    if st_stuff:
