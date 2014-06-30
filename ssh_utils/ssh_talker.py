@@ -183,12 +183,6 @@ class talker:
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def dummy_funct(t):
-   """
-   """
-   print 'dummy function' 
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -209,6 +203,11 @@ def opt_parse():
    (options,args) = parser.parse_args()
 
    return (options, args)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def check_basic_info(args, options):
+   """
+   """
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def usage():
@@ -274,7 +273,7 @@ def get_cmd(ucmd):
       return None
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def exec_cmd(t,cmd):
+def exec_cmd(t,cmd,stuff=None):
    """
    """
    #print type(cmd)
@@ -284,10 +283,32 @@ def exec_cmd(t,cmd):
       return (stin,stout,sterr)
    elif callable(cmd):
       #print 'this is a function'
-      return cmd(t)
+      return cmd(t,stuff)
 
    return None
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def dummy_funct(t,stuff=None):
+   """
+   """
+   print 'dummy function' 
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_ls(t,stuff=None):
+   """
+      get remote directory list
+   """
+   if not stuff:
+      return None
+
+   arg, option = stuff
+   remote_dir = arg[0]
+   lst = t.sftp_list(remote_dir)
+   prn_result(lst,False)
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -296,6 +317,7 @@ command_dict = {}
 command_dict['rescan'] = ('echo "1" > /sys/bus/pci/rescan','rescan the PCI bus')
 command_dict['lspci'] = ('lspci -vt','lspci verbose tree')
 command_dict['lspci-s'] = ('lspci','short lspci')
+command_dict['get_ls'] = (get_ls,'get remote directory file list')
 command_dict['dummy'] = (dummy_funct,'demostration of how to write a function')
 
 if __name__ == "__main__":
@@ -332,15 +354,16 @@ if __name__ == "__main__":
    if not cmd:
       #hopefully, if not a command, the arg is a host name
       if len(arg) >1:
-         hostname = arg[0]
-         cmd = get_cmd(arg[1])
+         hostname = arg.pop(0)
+         cmd = get_cmd(arg[0])
          if not cmd:
-            print 'command "%s" not found' % (arg[1])
+            print 'command "%s" not found' % (arg[0])
             sys.exit(1) 
       else:
          print 'command "%s" not found' % (arg[0])
          sys.exit(1) 
          
+   arg.pop(0)
    #print cmd
    # get host name (if not in arg list) and user/password
    if not hostname:
@@ -356,9 +379,9 @@ if __name__ == "__main__":
    else:
       passwrd = option.passwrd
 
-   t = talker(host, option.port, user=username, passwrd=passwrd)
+   t = talker(hostname, option.port, user=username, passwrd=passwrd)
    #(si,so,se) = t.exec_cmd(cmd)
-   st_stuff = exec_cmd(t,cmd)
+   st_stuff = exec_cmd(t,cmd,(arg,option))
    if st_stuff:
       if st_stuff[1]:
          #print 'is stdout'
