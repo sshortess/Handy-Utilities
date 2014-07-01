@@ -88,14 +88,14 @@ class talker:
       # For the record, something like this would gennerally be faster:
       # ssh user@host 'tar -cz /source/folder' | tar -xz
       """
-      print "Silly rabit, use \"ssh user@host 'tar -cz' | tar -xz\" ...'!!"
+      print "Silly rabit, use \"ssh -n user@host 'tar cz remote_path' | tar xz\" ...!!"
 
 
-   def put(self, local_file, remote_file):
+   def put(self, local_path, remote_path):
       """
       """
       sftp = self.mk_sftp_channel()
-      sftp.put(local_file, remote_file)
+      sftp.put(local_path, remote_path)
       sftp.close()
 
    def put_all(self,localpath,remotepath):
@@ -202,12 +202,7 @@ def opt_parse():
    # parser.add_option('-v', action='store_true',dest='verbose', default=False, help='verbose')
    (options,args) = parser.parse_args()
 
-   return (options, args)
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def check_basic_info(args, options):
-   """
-   """
+   return (args, options)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def usage():
@@ -218,6 +213,48 @@ def usage():
       #print 'key: %s value is: %s' % (k,w)
       u += '\t%s - %s\n' % (k,w)
    return u
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def process_args(arg, options):
+   """
+   """
+   if len(arg)  <= 0:
+      print "not enough args"
+      print "\t-h or --help"
+      sys.exit(1)
+
+   hostname = None
+   cmd = get_cmd(arg[0])
+   if not cmd:
+      #hopefully, if not a command, the arg is a host name
+      if len(arg) >1:
+         hostname = arg.pop(0)
+         cmd = get_cmd(arg[0])
+         if not cmd:
+            print 'command "%s" not found' % (arg[0])
+      else:
+         print 'command "%s" not found' % (arg[0])
+         
+   if cmd:
+      arg.pop(0)
+   
+   return (hostname, cmd, arg, options)
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_user_pass(arg,option):
+   """
+   """
+   if not option.username:
+      username = getpass.getuser()
+   else:
+      username = option.username
+
+   if not option.passwrd: 
+      passwrd = getpass.getpass()
+   else:
+      passwrd = option.passwrd
+
+   return (username, passwrd)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def get_term_size():
@@ -309,7 +346,20 @@ def get_ls(t,stuff=None):
    remote_dir = arg[0]
    lst = t.sftp_list(remote_dir)
    prn_result(lst,False)
+   return lst
 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def get_file(t,remote_path, local_path):
+   """
+      get file from remote
+   """
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+def put_file(t,local_path, remote_path):
+   """
+      put file on remote
+   """
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -318,66 +368,22 @@ command_dict['rescan'] = ('echo "1" > /sys/bus/pci/rescan','rescan the PCI bus')
 command_dict['lspci'] = ('lspci -vt','lspci verbose tree')
 command_dict['lspci-s'] = ('lspci','short lspci')
 command_dict['get_ls'] = (get_ls,'get remote directory file list')
+command_dict['get_file'] = (get_ls,'get remote file from host')
+command_dict['get_ls'] = (get_ls,'put file to remote host')
 command_dict['dummy'] = (dummy_funct,'demostration of how to write a function')
 
 if __name__ == "__main__":
    """
    """
-   (option,arg) = opt_parse()
+   # get arguments and options
+   (arg, option) = opt_parse()
 
-   #client = t.mk_myclient()
-   '''
-   stin, stout, sterr = t.snd_cmd(client,'ls')
-   for line in stout:
-      print '... ' + line.strip('\n')
-
-   cmd = t.get_cmd('lspci')
-   (si,so,se) = t.exec_cmd(cmd)
-   if so:
-      prn_result(so)
-   t.client_close(client)
-
-   cmd = t.get_cmd('dummy')
-   t.exec_cmd(cmd)
-   cmd = t.get_cmd('oops') 
-   if not cmd:
-      print 'command not found'
-
-   '''
-   if len(arg)  <= 0:
-      print "not enough args"
-      print "\t-h or --help"
-      sys.exit(1)
-
-   hostname = None
-   cmd = get_cmd(arg[0])
-   if not cmd:
-      #hopefully, if not a command, the arg is a host name
-      if len(arg) >1:
-         hostname = arg.pop(0)
-         cmd = get_cmd(arg[0])
-         if not cmd:
-            print 'command "%s" not found' % (arg[0])
-            sys.exit(1) 
-      else:
-         print 'command "%s" not found' % (arg[0])
-         sys.exit(1) 
-         
-   arg.pop(0)
-   #print cmd
-   # get host name (if not in arg list) and user/password
+   (hostname,cmd,arg,option) = process_args(arg,option)
+   # get host name (if not in arg list) 
    if not hostname:
-      hostname = input('remote host: ')
+      hostname = raw_input('remote host: ')
 
-   if not option.username:
-      username = getpass.getuser()
-   else:
-      username = option.username
-
-   if not option.passwrd: 
-      passwrd = getpass.getpass()
-   else:
-      passwrd = option.passwrd
+   username, passwrd = get_user_pass(arg, option)
 
    t = talker(hostname, option.port, user=username, passwrd=passwrd)
    #(si,so,se) = t.exec_cmd(cmd)
