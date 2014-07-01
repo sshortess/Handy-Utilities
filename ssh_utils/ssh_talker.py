@@ -73,11 +73,11 @@ class talker:
       sftp = paramiko.SFTPClient.from_transport(transport)
       return sftp
 
-   def get(self,remote_file,local_file):
+   def get(self,remote_path,local_path):
       """
       """
       sftp = self.mk_sftp_channel()
-      sftp.get(remote_file, local_file)
+      sftp.get(remote_path, local_path)
       sftp.close()
 
    def get_all(self,remotepath,localpath):
@@ -88,7 +88,7 @@ class talker:
       # For the record, something like this would gennerally be faster:
       # ssh user@host 'tar -cz /source/folder' | tar -xz
       """
-      print "Silly rabit, use \"ssh user@host 'tar -cz' | tar -xz\" ...'!!"
+      print "Silly rabit, use \"ssh -n user@host 'tar cz remote_directory' | tar -xz\" ...!!"
 
 
    def put(self, local_file, remote_file):
