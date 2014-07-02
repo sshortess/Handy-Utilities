@@ -217,6 +217,12 @@ def usage():
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def process_args(arg, options):
    """
+      process the argument list
+      drops the hostname (if present) and command 
+      from the returned arg list
+
+      if command isn't found, returns None and the 
+      arg list is not modified
    """
    if len(arg)  <= 0:
       print "not enough args"
@@ -228,13 +234,17 @@ def process_args(arg, options):
    if not cmd:
       #hopefully, if not a command, the arg is a host name
       if len(arg) >1:
-         hostname = arg.pop(0)
-         cmd = get_cmd(arg[0])
+         hostname = arg[0]
+         cmd = get_cmd(arg[1])
          if not cmd:
             print 'command "%s" not found' % (arg[0])
+            return None
       else:
          print 'command "%s" not found' % (arg[0])
+         return None
          
+   if hostname:
+      arg.pop(0)
    if cmd:
       arg.pop(0)
    
@@ -350,16 +360,29 @@ def get_ls(t,stuff=None):
 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def get_file(t,remote_path, local_path):
+def get_file(t,stuff=None):
    """
       get file from remote
    """
+   
+   arg,option = stuff
+   local_path = arg[0]
+   remote_path = arg[1]
+   t.get(remote_path, local_path)
+   return
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def put_file(t,local_path, remote_path):
+def put_file(t,stuff=None):
    """
       put file on remote
    """
+
+   arg,option = stuff
+   remote_path = arg[0]
+   local_path = arg[1]
+   t.get(local_path, remote_path)
+   return
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -368,8 +391,8 @@ command_dict['rescan'] = ('echo "1" > /sys/bus/pci/rescan','rescan the PCI bus')
 command_dict['lspci'] = ('lspci -vt','lspci verbose tree')
 command_dict['lspci-s'] = ('lspci','short lspci')
 command_dict['get_ls'] = (get_ls,'get remote directory file list')
-command_dict['get_file'] = (get_ls,'get remote file from host')
-command_dict['get_ls'] = (get_ls,'put file to remote host')
+command_dict['get_file'] = (get_file,'get remote file from host')
+command_dict['put_file'] = (put_file,'put file to remote host')
 command_dict['dummy'] = (dummy_funct,'demostration of how to write a function')
 
 if __name__ == "__main__":
